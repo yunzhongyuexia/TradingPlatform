@@ -26,6 +26,7 @@ func ReadABIFromFile() {
 		log.Fatal("failed to parse ABI: %w", err)
 	}
 
+	//打印方法
 	for name, method := range contractABI.Methods {
 		fmt.Printf("Method: %s,Inputs: %v, Outputs: %v\n", name, method.Inputs, method.Outputs)
 	}
