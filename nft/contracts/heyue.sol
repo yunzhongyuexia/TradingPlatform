@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.21;
 
+// 引入OpenZeppelin的ERC20和Ownable标准合约
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 // MintToken 就是编译后生成的json文件的文件名
@@ -24,4 +25,3 @@ contract MintToken is ERC20 {
         minter = newMinter;
     }
 }
-

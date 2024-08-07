@@ -25,4 +25,5 @@ module.exports = {
         }
     }
 };
-
+//truffle compile
+//truffle migrate --network holesky
