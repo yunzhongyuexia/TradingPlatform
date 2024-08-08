@@ -10,13 +10,16 @@ import (
 )
 
 var (
-	NFTClient   *ethclient.Client
-	ContractABI abi.ABI
+	NFTClient *ethclient.Client
+	JSONABI   abi.ABI
 )
 
 const (
 	// ClientURL holesky测试网
 	holeskyURL = "https://ethereum-holesky.core.chainstack.com/5cb26e90d4925a7f24a1c7b51c2d8263"
+
+	//测试链ID
+	chainID = 17000
 
 	// ABI文件地址
 	abiFileAddress = "D:/project/TradingPlatform/server/config/MintToken.abi"
@@ -57,13 +60,18 @@ func ConnectNFTClient() {
 	if err != nil {
 		log.Fatalf("failed to parse ABI: %v", err)
 	}
+	JSONABI = contractABI
 
 	//打印api
 	for _, method := range contractABI.Methods {
 		fmt.Printf("ABI method: %s\n", method.String())
 	}
 
-	ContractABI = contractABI
+	// 将ABI序列化为[]byte
+	//abiJSON, err := json.Marshal(contractABI)
+	//if err != nil {
+	//	log.Fatalf("failed to marshal ABI to JSON: %v", err)
+	//}
 }
 
 //Method: transfer,Inputs: [{to address false} {value uint256 false}], Outputs: [{ bool false}]

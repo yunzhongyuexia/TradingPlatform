@@ -2,6 +2,7 @@ package service_eth
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -18,7 +19,7 @@ func Casting() {
 	fromAddress := crypto.PubkeyToAddress(privateKey.PublicKey)
 
 	// 构造交易
-	toAddress := common.HexToAddress(Account1Address) // 替换为接收方的地址
+	toAddress := common.HexToAddress(Account2Address) // 替换为接收方的地址
 	amount := big.NewInt(1000)                        // 替换为要铸造的代币数量
 
 	// 通过方法签名获取方法元数据
@@ -70,4 +71,39 @@ func Casting() {
 	}
 
 	fmt.Printf("Transaction sent: %s\n", signedTx.Hash().Hex())
+}
+
+type ABIItem struct {
+	Name   string `json:"name"`
+	Type   string `json:"type"`
+	Inputs []struct {
+		Name    string `json:"name"`
+		Type    string `json:"type"`
+		Indexed bool   `json:"indexed"`
+	} `json:"inputs"`
+}
+
+func found() {
+
+	varabis := []ABIItem{}
+	err := json.Unmarshal(ABIJSON, &varabis)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// 搜索方法
+	var found bool
+	for _, item := range varabis {
+		if item.Type == "function" {
+			fmt.Printf("Found function: %s with inputs: %+v\n", item.Name, item.Inputs)
+			if item.Name == "mintTokens" {
+				found = true
+				break
+			}
+		}
+	}
+
+	if !found {
+		log.Fatal("Function mintTokens not found in the ABI")
+	}
 }

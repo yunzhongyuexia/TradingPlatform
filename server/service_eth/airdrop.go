@@ -2,72 +2,73 @@ package service_eth
 
 import (
 	"context"
-	"crypto/ecdsa"
 	"fmt"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/ethclient"
 	"log"
 	"math/big"
 )
 
 func Airdrop() {
-	// 智能合约地址
-	contractAddress := common.HexToAddress(nftContractAddress)
-
-	// 接收空投的地址列表
-	recipients := []string{
-		Account1Address,
-		Account2Address,
-		// ...更多地址
-	}
-
-	// 发送者地址和私钥（需要有足够余额和权限发送交易）
-	fromAddress := common.HexToAddress(Account1Address)
-	privateKey, _ := crypto.HexToECDSA(Account1)
-	ctx := context.Background()
-	// 执行空投
-	if err := AirdropNFTs(ctx, NFTClient, contractAddress, recipients, fromAddress, privateKey); err != nil {
+	privateKey, err := crypto.HexToECDSA(Account1)
+	if err != nil {
 		log.Fatal(err)
 	}
-}
-func AirdropNFTs(ctx context.Context, client *ethclient.Client, contractAddress common.Address, recipients []string, fromAddress common.Address, privateKey *ecdsa.PrivateKey) error {
-	chainID, _ := client.ChainID(ctx)        // 获取链ID
-	signer := types.NewEIP155Signer(chainID) // 创建签名者
 
-	// 构造调用数据，这里需要根据智能合约的具体情况来构造
-	data, err := ContractABI.Pack("airdropNFT", recipients)
+	fromAddress := crypto.PubkeyToAddress(privateKey.PublicKey)
+	nonce, err := NFTClient.PendingNonceAt(context.Background(), fromAddress)
 	if err != nil {
-		return err
+		log.Fatal(err)
 	}
 
-	// 创建交易
-	tx := types.NewTransaction(
-		0, // nonce
-		contractAddress,
-		big.NewInt(0), // 空投函数可能不需要支付 Ether
-		500000,        // gas limit
-		big.NewInt(0), // gas price
-		data,
-	)
-
-	// 签署交易
-	var chainIDBig *big.Int
-	fmt.Println(chainIDBig)
-	if chainID != nil {
-		chainIDBig = new(big.Int).Set(chainID)
-	}
-	signedTx, err := types.SignTx(tx, signer, privateKey)
+	gasPrice, err := NFTClient.SuggestGasPrice(context.Background())
 	if err != nil {
-		return err
+		log.Fatal(err)
+	}
+
+	// 构造空投交易的参数
+	recipients := []common.Address{
+		common.HexToAddress(Account1Address),
+		common.HexToAddress(Account2Address),
+		// 更多接收者地址...
+	}
+	values := []*big.Int{
+		big.NewInt(1000), // 每个NFT的价值
+		big.NewInt(2000), // 使用*big.Int表示2000
+		// 更多NFT的价值...
+	}
+	encoded, err := JSONABI.Pack("airdropNFT", recipients, values)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	amount := big.NewInt(0)    // 空投NFT通常不需要以太币
+	gasLimit := uint64(300000) // 适当设置Gas限制，根据实际情况调整
+	tx := types.NewTransaction(nonce, common.HexToAddress(nftContractAddress), amount, gasLimit, gasPrice, encoded)
+
+	// 使用私钥签名交易
+	chainIDBig := big.NewInt(int64(chainID))
+	signedTx, err := types.SignTx(tx, types.NewEIP155Signer(chainIDBig), privateKey)
+	if err != nil {
+		log.Fatal(err)
 	}
 
 	// 发送交易
-	if err := client.SendTransaction(context.Background(), signedTx); err != nil {
-		return err
+	err = NFTClient.SendTransaction(context.Background(), signedTx)
+	if err != nil {
+		log.Fatal(err)
 	}
 
-	fmt.Println("Transaction has been sent.")
-	return nil
+	// 等待交易确认
+	receipt, err := NFTClient.TransactionReceipt(context.Background(), signedTx.Hash())
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if receipt.Status == types.ReceiptStatusFailed {
+		log.Fatalf("Transaction failed: %v", receipt)
+	}
+
+	fmt.Printf("Airdrop transaction mined in block: %d\n", receipt.BlockNumber)
 }

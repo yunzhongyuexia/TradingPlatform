@@ -33,6 +33,6 @@ func TestQueryTransaction(t *testing.T) {
 
 func TestCasting(t *testing.T) {
 	ConnectNFTClient()
-	Casting()
+	found()
 	defer NFTClient.Close()
 }
